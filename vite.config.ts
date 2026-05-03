@@ -19,7 +19,7 @@ export default defineConfig(({mode}) => {
           description: 'A professional-grade Android-style stopwatch with a secret menu and offline support.',
           theme_color: '#000000',
           background_color: '#000000',
-          display: 'standalone',
+          display: 'fullscreen',
           orientation: 'portrait',
           icons: [
             {

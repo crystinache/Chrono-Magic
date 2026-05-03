@@ -12,7 +12,7 @@ interface ControlsProps {
 }
 
 export default function Controls({ isRunning, time, onStart, onStop, onReset, onLap }: ControlsProps) {
-  const { settings, resetForceState, setLongPressForceActive } = useSettings();
+  const { settings, resetForceState, setLongPressForceActive, resetBirthdayData } = useSettings();
   const isStarted = time > 0;
   
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -35,10 +35,15 @@ export default function Controls({ isRunning, time, onStart, onStop, onReset, on
   };
 
   const handleResetPressDown = () => {
-    if (settings.resetForceOnLongPress && !isRunning && isStarted) {
+    if (!isRunning && isStarted) {
       longPressTimer.current = setTimeout(() => {
-        resetForceState();
-        onReset(); // Automatically reset after 1s
+        if (settings.resetForceOnLongPress) {
+          resetForceState();
+        }
+        // Requirement 1: Long press Reset button to clear birthday reveal values
+        resetBirthdayData();
+        
+        onReset(); // Visual feedback of reset
         longPressTimer.current = null;
       }, 1000);
     }

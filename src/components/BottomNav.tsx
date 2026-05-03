@@ -2,15 +2,16 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 
 interface BottomNavProps {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
   onSecretMenuOpen: () => void;
 }
 
-export default function BottomNav({ onSecretMenuOpen }: BottomNavProps) {
-  const [activeTab, setActiveTab] = useState('Cronometro');
+export default function BottomNav({ activeTab, onTabChange, onSecretMenuOpen }: BottomNavProps) {
   const lastTapRef = useRef<number>(0);
 
   const handleTabClick = (tab: string) => {
-    setActiveTab(tab);
+    onTabChange(tab);
     
     if (tab === 'Cronometro') {
       const now = Date.now();

@@ -5,6 +5,9 @@ import StopwatchDisplay from './components/StopwatchDisplay';
 import Controls from './components/Controls';
 import BottomNav from './components/BottomNav';
 import SecretMenu from './components/SecretMenu';
+import AlarmView from './components/AlarmView';
+import WorldClockView from './components/WorldClockView';
+import TimerView from './components/TimerView';
 import { motion, AnimatePresence } from 'motion/react';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { famousPeople } from './data/famousPeople';
@@ -19,6 +22,7 @@ function StopwatchApp() {
     resetBirthdayData 
   } = useSettings();
   const [isSecretMenuOpen, setIsSecretMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('Cronometro');
 
   const { minutes, seconds, milliseconds } = formatTime(time);
 
@@ -80,101 +84,113 @@ function StopwatchApp() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col relative overflow-hidden">
-        {laps.length === 0 ? (
-          <div className="flex-1 flex flex-col">
-            <div className="flex-[2]" /> {/* Top spacer */}
-            <StopwatchDisplay 
-              minutes={minutes} 
-              seconds={seconds} 
-              milliseconds={milliseconds} 
-              onDoubleTapMinutes={handleDoubleTapMinutes}
-              onDoubleTapSeconds={handleDoubleTapSeconds}
-              onDoubleTapMilliseconds={handleDoubleTapMilliseconds}
-            />
-            <div className="flex-[3]" /> {/* Bottom spacer to push it above center */}
-          </div>
-        ) : (
+        {activeTab === 'Allarme' && <AlarmView />}
+        {activeTab === 'Orologio mondiale' && <WorldClockView />}
+        {activeTab === 'Timer' && <TimerView />}
+        
+        {activeTab === 'Cronometro' && (
           <>
-            {/* Stopwatch Display at the top when laps exist */}
-            <StopwatchDisplay 
-              minutes={minutes} 
-              seconds={seconds} 
-              milliseconds={milliseconds} 
-              onDoubleTapMinutes={handleDoubleTapMinutes}
-              onDoubleTapSeconds={handleDoubleTapSeconds}
-              onDoubleTapMilliseconds={handleDoubleTapMilliseconds}
-            />
+            {laps.length === 0 ? (
+              <div className="flex-1 flex flex-col">
+                <div className="flex-[2]" /> {/* Top spacer */}
+                <StopwatchDisplay 
+                  minutes={minutes} 
+                  seconds={seconds} 
+                  milliseconds={milliseconds} 
+                  onDoubleTapMinutes={handleDoubleTapMinutes}
+                  onDoubleTapSeconds={handleDoubleTapSeconds}
+                  onDoubleTapMilliseconds={handleDoubleTapMilliseconds}
+                />
+                <div className="flex-[3]" /> {/* Bottom spacer to push it above center */}
+              </div>
+            ) : (
+              <>
+                {/* Stopwatch Display at the top when laps exist */}
+                <StopwatchDisplay 
+                  minutes={minutes} 
+                  seconds={seconds} 
+                  milliseconds={milliseconds} 
+                  onDoubleTapMinutes={handleDoubleTapMinutes}
+                  onDoubleTapSeconds={handleDoubleTapSeconds}
+                  onDoubleTapMilliseconds={handleDoubleTapMilliseconds}
+                />
 
-            {/* Lap List Header */}
-            <div className="flex justify-center gap-24 py-2 border-b border-zinc-500 text-sm font-medium text-zinc-400">
-              <span className="w-16 text-center">Giro</span>
-              <span className="w-32 text-center">Tempo totale</span>
-            </div>
+                {/* Lap List Header */}
+                <div className="flex justify-center gap-24 py-2 border-b border-zinc-500 text-sm font-medium text-zinc-400">
+                  <span className="w-16 text-center">Giro</span>
+                  <span className="w-32 text-center">Tempo totale</span>
+                </div>
 
-            {/* Lap List */}
-            <div className="flex-1 overflow-y-auto scrollbar-hide">
-              <AnimatePresence initial={false}>
-                {laps.map((l, index) => (
+                {/* Lap List */}
+                <div className="flex-1 overflow-y-auto scrollbar-hide">
+                  <AnimatePresence initial={false}>
+                    {laps.map((l, index) => (
+                      <motion.div
+                        key={l.id}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="flex justify-center gap-24 py-1.5"
+                      >
+                        <span className="w-16 text-center text-zinc-400 text-base tabular-nums">
+                          {String(laps.length - index).padStart(2, '0')}
+                        </span>
+                        <span className="w-32 text-center text-white text-lg font-medium tabular-nums">
+                          {formatTime(l.time).minutes}:{formatTime(l.time).seconds}.{formatTime(l.time).milliseconds}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </>
+            )}
+
+            {/* Controls */}
+            <div className="bg-black relative">
+              <AnimatePresence>
+                {birthdayState.isRevealed && birthdayState.data.day !== null && birthdayState.data.month !== null && (
                   <motion.div
-                    key={l.id}
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="flex justify-center gap-24 py-1.5"
+                    className="absolute -top-28 left-0 right-0 flex flex-col items-center justify-center pointer-events-none z-50"
+                    style={{ color: settings.revealFontColor }}
                   >
-                    <span className="w-16 text-center text-zinc-400 text-base tabular-nums">
-                      {String(laps.length - index).padStart(2, '0')}
-                    </span>
-                    <span className="w-32 text-center text-white text-lg font-medium tabular-nums">
-                      {formatTime(l.time).minutes}:{formatTime(l.time).seconds}.{formatTime(l.time).milliseconds}
-                    </span>
+                    <div className="text-base font-medium tracking-wider">
+                      {String(birthdayState.data.day).padStart(2, '0')} {String(birthdayState.data.month).padStart(2, '0')}
+                    </div>
+                    {settings.zodiacRevealActive && (
+                      <div className="text-sm mt-1">
+                        {getZodiacSign(birthdayState.data.day, birthdayState.data.month)}
+                      </div>
+                    )}
+                    {settings.famousPersonRevealActive && (
+                      <div className="text-sm mt-1 italic">
+                        {getFamousPerson(birthdayState.data.day, birthdayState.data.month)}
+                      </div>
+                    )}
                   </motion.div>
-                ))}
+                )}
               </AnimatePresence>
+              <Controls 
+                isRunning={isRunning} 
+                time={time}
+                onStart={start} 
+                onStop={stop} 
+                onReset={reset} 
+                onLap={lap} 
+              />
             </div>
           </>
         )}
-
-        {/* Controls */}
-        <div className="bg-black relative">
-          <AnimatePresence>
-            {birthdayState.isRevealed && birthdayState.data.day !== null && birthdayState.data.month !== null && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="absolute -top-28 left-0 right-0 flex flex-col items-center justify-center pointer-events-none z-50"
-                style={{ color: settings.revealFontColor }}
-              >
-                <div className="text-base font-medium tracking-wider">
-                  {String(birthdayState.data.day).padStart(2, '0')} {String(birthdayState.data.month).padStart(2, '0')}
-                </div>
-                {settings.zodiacRevealActive && (
-                  <div className="text-sm mt-1">
-                    {getZodiacSign(birthdayState.data.day, birthdayState.data.month)}
-                  </div>
-                )}
-                {settings.famousPersonRevealActive && (
-                  <div className="text-sm mt-1 italic">
-                    {getFamousPerson(birthdayState.data.day, birthdayState.data.month)}
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <Controls 
-            isRunning={isRunning} 
-            time={time}
-            onStart={start} 
-            onStop={stop} 
-            onReset={reset} 
-            onLap={lap} 
-          />
-        </div>
       </main>
 
       {/* Bottom Navigation */}
-      <BottomNav onSecretMenuOpen={() => setIsSecretMenuOpen(true)} />
+      <BottomNav 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onSecretMenuOpen={() => setIsSecretMenuOpen(true)} 
+      />
 
       {/* Secret Menu Overlay */}
       <SecretMenu 

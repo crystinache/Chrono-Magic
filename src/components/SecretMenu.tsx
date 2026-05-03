@@ -56,10 +56,13 @@ export default function SecretMenu({ isOpen, onClose }: SecretMenuProps) {
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-            <button onClick={onClose} className="p-2 -ml-2 hover:bg-zinc-800 rounded-full transition-colors">
-              <X size={24} className="text-zinc-400" />
+            <button 
+              onClick={onClose} 
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-full transition-all active:scale-95 whitespace-nowrap"
+            >
+              SAVE & PERFORM
             </button>
-            <h1 className="text-xl font-bold tracking-wider text-white">CHRONO MAGIC</h1>
+            <h1 className="text-lg font-bold tracking-wider text-white">CHRONO MAGIC</h1>
             <button className="p-2 -mr-2 text-yellow-500">
               <Star size={24} fill="currentColor" />
             </button>

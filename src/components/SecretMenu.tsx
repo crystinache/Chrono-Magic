@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Star, Settings, Skull, Heart, Info, Gift, Palette } from 'lucide-react';
-import { useSettings, ForceAfterUnit, ForceOn, ForceType } from '../context/SettingsContext';
+import { X, Star, Settings, Skull, Heart, Info, Gift, Palette, Plus, Trash2, ChevronRight, Edit2, Check, RefreshCw } from 'lucide-react';
+import { useSettings, ForceAfterUnit, ForceOn, ForceType, Preset } from '../context/SettingsContext';
 
 interface SecretMenuProps {
   isOpen: boolean;
@@ -9,7 +9,22 @@ interface SecretMenuProps {
 }
 
 export default function SecretMenu({ isOpen, onClose }: SecretMenuProps) {
-  const { settings, updateSettings, resetBirthdayData } = useSettings();
+  const { 
+    settings, 
+    updateSettings, 
+    resetBirthdayData, 
+    presets, 
+    saveCurrentAsPreset, 
+    loadPreset, 
+    deletePreset,
+    updatePreset
+  } = useSettings();
+  const [view, setView] = useState<'main' | 'presets'>('main');
+  const [isNamingPreset, setIsNamingPreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [editingSettings, setEditingSettings] = useState<any>(null); // To store settings being edited
   const [inputValue, setInputValue] = useState(settings.forceValue);
   const [forceAfterInput, setForceAfterInput] = useState(settings.forceAfterValue.toString());
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -62,9 +77,15 @@ export default function SecretMenu({ isOpen, onClose }: SecretMenuProps) {
             >
               SAVE & PERFORM
             </button>
-            <h1 className="text-lg font-bold tracking-wider text-white">CHRONO MAGIC</h1>
-            <button className="p-2 -mr-2 text-yellow-500">
-              <Star size={24} fill="currentColor" />
+            <button 
+              onClick={() => setView(view === 'main' ? 'presets' : 'main')}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 border ${
+                view === 'presets' 
+                  ? 'bg-zinc-100 text-black border-zinc-100' 
+                  : 'bg-transparent text-white border-zinc-700 hover:border-zinc-500'
+              }`}
+            >
+              {view === 'main' ? 'PRESETS' : 'BACK'}
             </button>
           </div>
 
@@ -73,7 +94,234 @@ export default function SecretMenu({ isOpen, onClose }: SecretMenuProps) {
             className="flex-1 overflow-y-auto p-6 space-y-8 relative"
             onClick={() => setActiveTooltip(null)}
           >
-            {/* Section: Force Method */}
+            {view === 'presets' ? (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-white uppercase tracking-tight">Saved Presets</h2>
+                  {!isNamingPreset ? (
+                    <button 
+                      onClick={() => setIsNamingPreset(true)}
+                      className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
+                    >
+                      <Plus size={18} />
+                      ADD PRESET
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 animate-in slide-in-from-right-2">
+                       <input 
+                        autoFocus
+                        placeholder="Preset Name..."
+                        value={newPresetName}
+                        onChange={(e) => setNewPresetName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newPresetName.trim()) {
+                            saveCurrentAsPreset(newPresetName);
+                            setNewPresetName('');
+                            setIsNamingPreset(false);
+                          }
+                        }}
+                        className="bg-zinc-800 border border-indigo-500 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none w-32"
+                      />
+                      <button 
+                        onClick={() => {
+                          if (newPresetName.trim()) {
+                            saveCurrentAsPreset(newPresetName);
+                            setNewPresetName('');
+                            setIsNamingPreset(false);
+                          }
+                        }}
+                        className="bg-indigo-600 text-white p-1.5 rounded-lg active:scale-95 transition-all"
+                      >
+                        <Plus size={18} />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setIsNamingPreset(false);
+                          setNewPresetName('');
+                        }}
+                        className="bg-zinc-800 text-zinc-500 p-1.5 rounded-lg active:scale-95 transition-all"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {presets.length === 0 ? (
+                  <div className="py-20 text-center space-y-2">
+                    <p className="text-zinc-500">No presets saved yet.</p>
+                    <p className="text-xs text-zinc-600 uppercase tracking-widest">Click add to save current settings</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {presets.map((preset, index) => (
+                      <div 
+                        key={preset.id}
+                        onClick={() => {
+                          loadPreset(preset.id);
+                          onClose();
+                        }}
+                        className="group relative bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 hover:border-indigo-500/50 hover:bg-zinc-800/80 transition-all cursor-pointer overflow-hidden"
+                      >
+                        <div className="space-y-2 relative z-10">
+                          {/* Row 1: Index + Name */}
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-white font-bold flex items-center gap-2">
+                              {editingPresetId === preset.id ? (
+                                <input 
+                                  autoFocus
+                                  value={editingName}
+                                  onChange={(e) => setEditingName(e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="bg-zinc-800 border-b border-indigo-500 text-white font-bold px-1 focus:outline-none w-32"
+                                />
+                              ) : (
+                                <>
+                                  <span className="text-indigo-500">{index + 1}.</span>
+                                  {preset.name}
+                                </>
+                              )}
+                            </h3>
+                            <div className="flex items-center gap-1">
+                              {editingPresetId === preset.id ? (
+                                <div className="flex items-center gap-1">
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updatePreset(preset.id, editingName, editingSettings);
+                                      setEditingPresetId(null);
+                                      setEditingSettings(null);
+                                    }}
+                                    className="bg-indigo-600 text-white px-3 py-1 rounded-md active:scale-95 transition-all text-[10px] font-bold uppercase tracking-widest"
+                                  >
+                                    SALVA
+                                  </button>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingPresetId(null);
+                                      setEditingSettings(null);
+                                    }}
+                                    className="bg-zinc-700 text-zinc-400 p-1.5 rounded-md active:scale-95 transition-all"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingPresetId(preset.id);
+                                      setEditingName(preset.name);
+                                      setEditingSettings(preset.settings);
+                                    }}
+                                    className="text-zinc-600 hover:text-indigo-400 transition-colors p-1"
+                                    title="Edit preset"
+                                  >
+                                    <Edit2 size={16} />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (confirm('Delete preset?')) deletePreset(preset.id);
+                                    }}
+                                    className="text-zinc-600 hover:text-red-500 transition-colors p-1"
+                                    title="Delete preset"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {editingPresetId === preset.id && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingSettings({ ...settings });
+                              }}
+                              className={`flex items-center gap-2 w-full justify-center py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all mt-2 ${
+                                JSON.stringify(editingSettings) === JSON.stringify(settings)
+                                  ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/50'
+                                  : 'bg-zinc-800 text-zinc-500 border-zinc-700/50 hover:bg-zinc-700 hover:text-zinc-300'
+                              }`}
+                            >
+                              <RefreshCw size={12} className={JSON.stringify(editingSettings) === JSON.stringify(settings) ? "" : "animate-spin-slow"} />
+                              {JSON.stringify(editingSettings) === JSON.stringify(settings) 
+                                ? 'IMPOSTAZIONI AGGIORNATE' 
+                                : 'AGGIORNA IMPOSTAZIONI ATTUALI'}
+                            </button>
+                          )}
+
+                          {/* Row 2: Force Value + Mode */}
+                          <div className="flex items-center gap-2">
+                            <div className="bg-white text-black px-2 py-0.5 rounded text-xs font-black">
+                              {formatDisplayValue(preset.settings.forceValue) || "EMPTY"}
+                            </div>
+                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                              {preset.settings.forceType === 'ms' ? 'MS' : 
+                               preset.settings.forceType === 'sec+ms' ? 'SEC + MS' : 'SEC:MS'}
+                            </span>
+                          </div>
+
+                          {/* Row 3: Force Method Logic */}
+                          <div className="text-xs text-zinc-400 font-medium">
+                            Force after {preset.settings.forceAfterValue} {preset.settings.forceAfterUnit}, 
+                            on {preset.settings.forceOn}
+                          </div>
+
+                          {/* Row 4: Chrono Speed */}
+                          <div className="text-[10px] text-zinc-500 font-bold flex items-center gap-1">
+                            <Palette size={10} className="text-indigo-500" />
+                            CHRONO SPEED: {speedOptions.find(o => o.value === preset.settings.chronoSpeed)?.label || preset.settings.chronoSpeed}
+                          </div>
+
+                          {/* Row 5: Active General Settings Toggles */}
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {preset.settings.resetForceOnLongPress && (
+                              <span className="bg-zinc-800 text-zinc-400 text-[9px] px-1.5 py-0.5 rounded-md border border-zinc-700">LONG PRESS RESET</span>
+                            )}
+                            {preset.settings.longPressStartToForce && (
+                              <span className="bg-zinc-800 text-zinc-400 text-[9px] px-1.5 py-0.5 rounded-md border border-zinc-700">LONG PRESS START</span>
+                            )}
+                            {preset.settings.hideStatusBar && (
+                              <span className="bg-zinc-800 text-zinc-400 text-[9px] px-1.5 py-0.5 rounded-md border border-zinc-700">HIDE STATUS BAR</span>
+                            )}
+                          </div>
+
+                          {/* Row 6/7: Toxic / Birthday */}
+                          {(preset.settings.toxicForceActive || preset.settings.birthdayRevealActive) && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {preset.settings.toxicForceActive && (
+                                <span className="bg-red-500/10 text-red-500 text-[9px] px-1.5 py-0.5 rounded-md border border-red-500/20 font-bold uppercase">TOXIC: {preset.settings.toxicValue}</span>
+                              )}
+                              {preset.settings.birthdayRevealActive && (
+                                <div className="flex gap-1.5">
+                                  <span className="bg-purple-500/10 text-purple-400 text-[9px] px-1.5 py-0.5 rounded-md border border-purple-500/20 font-bold uppercase">BIRTHDAY REVEAL</span>
+                                  {preset.settings.zodiacRevealActive && (
+                                    <span className="bg-purple-500/10 text-purple-400 text-[9px] px-1.5 py-0.5 rounded-md border border-purple-500/20 font-bold uppercase">ZODIAC</span>
+                                  )}
+                                  {preset.settings.famousPersonRevealActive && (
+                                    <span className="bg-purple-500/10 text-purple-400 text-[9px] px-1.5 py-0.5 rounded-md border border-purple-500/20 font-bold uppercase">FAMOUS</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ChevronRight className="text-indigo-500" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Section: Force Method */}
             <div 
               className="space-y-6 bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800/50"
               onClick={(e) => e.stopPropagation()}
@@ -616,9 +864,11 @@ export default function SecretMenu({ isOpen, onClose }: SecretMenuProps) {
                 </div>
               )}
             </div>
-          </div>
+          </>
+        )}
+      </div>
 
-          {/* Footer Hint */}
+      {/* Footer Hint */}
           <div className="p-6 text-center text-xs text-zinc-600 uppercase tracking-widest">
             Chrono Magic v1.0.0
           </div>

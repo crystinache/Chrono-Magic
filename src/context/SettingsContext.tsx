@@ -60,6 +60,18 @@ interface SettingsContextType {
   setBirthdayRevealed: (revealed: boolean) => void;
   resetBirthdayData: () => void;
   incrementBirthdayStop: (seconds: number) => void;
+  presets: Preset[];
+  saveCurrentAsPreset: (name: string) => void;
+  loadPreset: (id: string) => void;
+  deletePreset: (id: string) => void;
+  updatePreset: (id: string, name: string, settings: ForceSettings) => void;
+}
+
+export interface Preset {
+  id: string;
+  name: string;
+  settings: ForceSettings;
+  createdAt: number;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -112,6 +124,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return saved ? { ...defaultState, ...JSON.parse(saved) } : defaultState;
   });
 
+  const [presets, setPresets] = useState<Preset[]>(() => {
+    const saved = localStorage.getItem('chrono_presets');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   useEffect(() => {
     localStorage.setItem('chrono_settings', JSON.stringify(settings));
   }, [settings]);
@@ -119,6 +136,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('chrono_birthday_state', JSON.stringify(birthdayState));
   }, [birthdayState]);
+
+  useEffect(() => {
+    localStorage.setItem('chrono_presets', JSON.stringify(presets));
+  }, [presets]);
 
   const updateSettings = (newSettings: Partial<ForceSettings>) => {
     setSettings((prev) => ({ ...prev, ...newSettings }));
@@ -217,6 +238,32 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setForceState(prev => ({ ...prev, isLongPressForceActive: active }));
   };
 
+  const saveCurrentAsPreset = (name: string) => {
+    const newPreset: Preset = {
+      id: Date.now().toString(),
+      name,
+      settings: { ...settings },
+      createdAt: Date.now()
+    };
+    setPresets(prev => [...prev, newPreset]);
+  };
+
+  const loadPreset = (id: string) => {
+    const preset = presets.find(p => p.id === id);
+    if (preset) {
+      setSettings(preset.settings);
+      resetForceState();
+    }
+  };
+
+  const deletePreset = (id: string) => {
+    setPresets(prev => prev.filter(p => p.id !== id));
+  };
+
+  const updatePreset = (id: string, name: string, settings: ForceSettings) => {
+    setPresets(prev => prev.map(p => p.id === id ? { ...p, name, settings } : p));
+  };
+
   return (
     <SettingsContext.Provider 
       value={{ 
@@ -233,7 +280,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         updateBirthdayData,
         setBirthdayRevealed,
         resetBirthdayData,
-        incrementBirthdayStop
+        incrementBirthdayStop,
+        presets,
+        saveCurrentAsPreset,
+        loadPreset,
+        deletePreset,
+        updatePreset
       }}
     >
       {children}

@@ -12,6 +12,30 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { famousPeople } from './data/famousPeople';
 
+const LapItem = React.memo(({ lap, totalLaps, index, formatTime }: { 
+  lap: any, 
+  totalLaps: number, 
+  index: number, 
+  formatTime: (ms: number) => any 
+}) => {
+  const { minutes, seconds, milliseconds } = formatTime(lap.time);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      className="flex justify-center gap-24 py-1.5"
+    >
+      <span className="w-16 text-center text-zinc-400 text-base tabular-nums">
+        {String(totalLaps - index).padStart(2, '0')}
+      </span>
+      <span className="w-32 text-center text-white text-lg font-medium tabular-nums">
+        {minutes}:{seconds}.{milliseconds}
+      </span>
+    </motion.div>
+  );
+});
+
 function StopwatchApp() {
   const { time, isRunning, laps, start, stop, reset, lap, formatTime } = useStopwatch();
   const { 
@@ -125,20 +149,13 @@ function StopwatchApp() {
                 <div className="flex-1 overflow-y-auto scrollbar-hide">
                   <AnimatePresence initial={false}>
                     {laps.map((l, index) => (
-                      <motion.div
-                        key={l.id}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="flex justify-center gap-24 py-1.5"
-                      >
-                        <span className="w-16 text-center text-zinc-400 text-base tabular-nums">
-                          {String(laps.length - index).padStart(2, '0')}
-                        </span>
-                        <span className="w-32 text-center text-white text-lg font-medium tabular-nums">
-                          {formatTime(l.time).minutes}:{formatTime(l.time).seconds}.{formatTime(l.time).milliseconds}
-                        </span>
-                      </motion.div>
+                      <LapItem 
+                        key={l.id} 
+                        lap={l} 
+                        totalLaps={laps.length} 
+                        index={index} 
+                        formatTime={formatTime} 
+                      />
                     ))}
                   </AnimatePresence>
                 </div>

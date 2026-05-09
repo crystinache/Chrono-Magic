@@ -20,22 +20,25 @@ export function useStopwatch() {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<Lap[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const requestRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const accumulatedTimeRef = useRef<number>(0);
+
+  const update = useCallback(() => {
+    const now = Date.now();
+    const realElapsed = now - startTimeRef.current;
+    const virtualElapsed = realElapsed / settings.chronoSpeed;
+    const totalVirtual = accumulatedTimeRef.current + virtualElapsed;
+    setTime(totalVirtual);
+    requestRef.current = requestAnimationFrame(update);
+  }, [settings.chronoSpeed]);
 
   const start = useCallback(() => {
     if (isRunning) return;
     setIsRunning(true);
     startTimeRef.current = Date.now();
-    timerRef.current = setInterval(() => {
-      const now = Date.now();
-      const realElapsed = now - startTimeRef.current;
-      const virtualElapsed = realElapsed / settings.chronoSpeed;
-      const totalVirtual = accumulatedTimeRef.current + virtualElapsed;
-      setTime(totalVirtual);
-    }, 10);
-  }, [isRunning, settings.chronoSpeed]);
+    requestRef.current = requestAnimationFrame(update);
+  }, [isRunning, update]);
 
   const applyForce = useCallback((action: 'Stop' | 'Lap', currentTime: number) => {
     if (!settings.isActive || forceState.isForcingComplete) return currentTime;
@@ -109,6 +112,11 @@ export function useStopwatch() {
   const stop = useCallback(() => {
     if (!isRunning) return;
     
+    if (requestRef.current !== null) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = null;
+    }
+
     const virtualElapsed = (Date.now() - startTimeRef.current) / settings.chronoSpeed;
     const currentVirtualTime = accumulatedTimeRef.current + virtualElapsed;
     
@@ -118,7 +126,6 @@ export function useStopwatch() {
     accumulatedTimeRef.current = forcedTime;
     
     setIsRunning(false);
-    if (timerRef.current) clearInterval(timerRef.current);
     incrementStopCount();
 
     if (settings.birthdayRevealActive) {
@@ -129,7 +136,10 @@ export function useStopwatch() {
 
   const reset = useCallback(() => {
     setIsRunning(false);
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (requestRef.current !== null) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = null;
+    }
     setTime(0);
     setLaps([]);
     accumulatedTimeRef.current = 0;
@@ -156,7 +166,15 @@ export function useStopwatch() {
     incrementLapCount();
   }, [laps, applyForce, incrementLapCount, settings.chronoSpeed]);
 
-  const formatTime = (ms: number) => {
+  useEffect(() => {
+    return () => {
+      if (requestRef.current !== null) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, []);
+
+  const formatTime = useCallback((ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
     const milliseconds = Math.floor((ms % 1000) / 10);
@@ -166,7 +184,7 @@ export function useStopwatch() {
       seconds: String(seconds).padStart(2, '0'),
       milliseconds: String(milliseconds).padStart(2, '0'),
     };
-  };
+  }, []);
 
   return {
     time,

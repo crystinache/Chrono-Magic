@@ -102,7 +102,7 @@ export const famousPeople: Record<number, Record<number, string>> = {
     3: "Eddie Murphy",
     4: "Sami Khedira (fot)",
     5: "Simone Inzaghi (allenatore)",
-    6: "Matteo Berrettini",
+    6: "Oscar Piastri (F1)",
     7: "Jackie Chan",
     8: "Dean Norris (ACT)",
     9: "Charles Baudelaire",

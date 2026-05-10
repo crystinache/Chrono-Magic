@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Star, Settings, Skull, Heart, Info, Gift, Palette, Plus, Trash2, ChevronRight, Edit2, Check, RefreshCw } from 'lucide-react';
+import { X, Star, Settings, Skull, Heart, Info, Gift, Palette, Plus, Trash2, ChevronRight, Edit2, Check, RefreshCw, Type, Keyboard } from 'lucide-react';
 import { useSettings, ForceAfterUnit, ForceOn, ForceType, Preset } from '../context/SettingsContext';
 
 interface SecretMenuProps {
@@ -20,6 +20,40 @@ export default function SecretMenu({ isOpen, onClose }: SecretMenuProps) {
     updatePreset
   } = useSettings();
   const [view, setView] = useState<'main' | 'presets'>('main');
+  const [cryptextValue, setCryptextValue] = useState('');
+
+  const copyToForce = () => {
+    const numbers = getNumbersTransformation(cryptextValue);
+    if (numbers) {
+      setInputValue(numbers);
+      updateSettings({ forceValue: numbers });
+    }
+  };
+
+  const letterToNumber: Record<string, string> = {
+    a: '0', b: '9', c: '0', d: '10', e: '3', f: '1', g: '6', h: '4', i: '1', j: '1',
+    k: '71', l: '7', m: '41', n: '4', o: '0', p: '01', q: '6', r: '21', s: '5',
+    t: '7', u: '0', v: '1', w: '14', x: '7', y: '6', z: '2'
+  };
+
+  const uppercaseTransformLetters = ['e', 'f', 'l', 'm', 'r', 's', 'v', 'z'];
+
+  const getTransformedCryptext = (text: string) => {
+    return text.split('').map(char => {
+      const lower = char.toLowerCase();
+      if (uppercaseTransformLetters.includes(lower)) {
+        return char.toUpperCase();
+      }
+      return char;
+    }).join('');
+  };
+
+  const getNumbersTransformation = (text: string) => {
+    const chars = text.toLowerCase().split('');
+    const numbers = chars.map(char => letterToNumber[char] || '');
+    return [...numbers].reverse().join('');
+  };
+
   const [isNamingPreset, setIsNamingPreset] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
@@ -70,23 +104,31 @@ export default function SecretMenu({ isOpen, onClose }: SecretMenuProps) {
           className="fixed inset-0 z-50 bg-[#1a1b1e] text-zinc-300 flex flex-col overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 gap-2">
             <button 
               onClick={onClose} 
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-full transition-all active:scale-95 whitespace-nowrap"
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-full transition-all active:scale-95 whitespace-nowrap uppercase tracking-wider"
             >
-              SAVE & PERFORM
+              PERFORM
             </button>
-            <button 
-              onClick={() => setView(view === 'main' ? 'presets' : 'main')}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 border ${
-                view === 'presets' 
-                  ? 'bg-zinc-100 text-black border-zinc-100' 
-                  : 'bg-transparent text-white border-zinc-700 hover:border-zinc-500'
-              }`}
-            >
-              {view === 'main' ? 'PRESETS' : 'BACK'}
-            </button>
+            <div className="flex items-center bg-zinc-900 rounded-full p-1 border border-zinc-800">
+              <button 
+                onClick={() => setView('main')}
+                className={`px-4 py-1 rounded-full text-[10px] font-bold transition-all ${
+                  view === 'main' ? 'bg-zinc-100 text-black' : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                MAIN
+              </button>
+              <button 
+                onClick={() => setView('presets')}
+                className={`px-4 py-1 rounded-full text-[10px] font-bold transition-all ${
+                  view === 'presets' ? 'bg-zinc-100 text-black' : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                PRESETS
+              </button>
+            </div>
           </div>
 
           {/* Content */}
@@ -320,7 +362,77 @@ export default function SecretMenu({ isOpen, onClose }: SecretMenuProps) {
                 )}
               </div>
             ) : (
-              <>
+              <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
+                {/* Cryptext Section */}
+                <div className="space-y-4 bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-indigo-400 font-medium">
+                      <Type size={20} />
+                      <span className="text-lg">Cryptext Tool</span>
+                    </div>
+                    {cryptextValue && (
+                      <button 
+                        onClick={() => setCryptextValue('')}
+                        className="text-[10px] text-zinc-500 hover:text-white transition-colors underline underline-offset-4 uppercase tracking-widest"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-indigo-500 transition-colors">
+                        <Keyboard size={16} />
+                      </div>
+                      <input 
+                        type="text"
+                        placeholder="Write something..."
+                        value={cryptextValue}
+                        onChange={(e) => setCryptextValue(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      {/* Cryptext Font Preview */}
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600">
+                          <Type size={16} />
+                        </div>
+                        <div className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 min-h-[46px] flex items-center overflow-hidden">
+                          <div className="text-2xl text-white font-cryptext truncate leading-none">
+                            {getTransformedCryptext(cryptextValue) || <span className="text-zinc-700 font-sans italic text-sm">Cryptext Font</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Numbers Preview */}
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-500">
+                            <span className="font-bold text-[10px] tracking-tight">NUM</span>
+                          </div>
+                          <div className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-14 pr-4 py-3 min-h-[46px] flex items-center overflow-hidden">
+                            <div className="text-lg text-indigo-500 font-mono font-bold tracking-widest truncate leading-none">
+                              {getNumbersTransformation(cryptextValue) || <span className="text-zinc-700 font-sans italic text-sm">Number Transformation</span>}
+                            </div>
+                          </div>
+                        </div>
+                        {cryptextValue && (
+                          <button 
+                            onClick={copyToForce}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                          >
+                            <Check size={14} />
+                            Copy to Force
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Section: Force Method */}
             <div 
               className="space-y-6 bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800/50"
@@ -864,7 +976,7 @@ export default function SecretMenu({ isOpen, onClose }: SecretMenuProps) {
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
 

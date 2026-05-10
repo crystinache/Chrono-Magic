@@ -1,7 +1,16 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Cryptext';
+  src: url('/Cryptext25-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-cryptext: "Cryptext", cursive;
 }
 
 @layer base {
